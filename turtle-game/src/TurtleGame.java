@@ -1,5 +1,4 @@
-import java.util.Scanner;
-import java.util.Random;
+import java.util.*;
 
 public class TurtleGame {
     private static int size;
@@ -12,7 +11,6 @@ public class TurtleGame {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
-        // Запрашиваем размер карты у пользователя
         System.out.println("====================================");
         System.out.print("Введите размер карты (минимум 5, максимум 90): ");
         size = scanner.nextInt();
@@ -28,23 +26,22 @@ public class TurtleGame {
 
         field = new char[size][size];
 
-        // Запрашиваем процент мины на карте у пользователя
         System.out.println("====================================");
-        System.out.print("Введите процент покрытия минами (0-90%): ");
+        System.out.print("Введите процент покрытия минами (0-80%): ");
         int minePercentage = scanner.nextInt();
         System.out.println("====================================");
 
         if (minePercentage < 0) {
             minePercentage = 0;
-        } else if (minePercentage > 90) {
-            minePercentage = 90;
+        } else if (minePercentage > 80) {
+            minePercentage = 80;
         }
 
-        placeFlag(); // Устанавливаем флаг на границах
-        placeMines(minePercentage); // Устанавливаем мины
-        field[turtleY][turtleX] = '*'; // Начальная позиция черепахи закрашена
+        placeFlag();
+        placeMines(minePercentage);
+        field[turtleY][turtleX] = '*';
 
-        scanner.nextLine(); // Чтобы пропустить оставшуюся строку после nextInt()
+        scanner.nextLine();
 
         String command;
         while (true) {
@@ -57,22 +54,18 @@ public class TurtleGame {
         }
     }
 
-    // Размещаем флаг на верхней или правой границе
     private static void placeFlag() {
         Random random = new Random();
-        boolean onTopBorder = random.nextBoolean(); // Случайный выбор: верхняя или правая граница
+        boolean onTopBorder = random.nextBoolean();
 
         if (onTopBorder) {
-            // Верхняя граница
             flagX = random.nextInt(size);
             flagY = size - 1;
         } else {
-            // Правая граница
             flagX = size - 1;
             flagY = random.nextInt(size);
         }
 
-        // Флаг не должен располагаться на стартовой позиции черепахи
         while (flagX == turtleX && flagY == turtleY) {
             if (onTopBorder) {
                 flagX = random.nextInt(size);
@@ -81,64 +74,73 @@ public class TurtleGame {
             }
         }
 
-        field[flagY][flagX] = 'F'; // Устанавливаем флаг
+        field[flagY][flagX] = 'F';
     }
 
-    // Размещаем мины на указанном проценте площади карты
     private static void placeMines(int minePercentage) {
         Random random = new Random();
-        int numberOfMines = (int) (size * size * (minePercentage / 100.0)); // Процент от площади
+        int numberOfMines = (int) (size * size * (minePercentage / 100.0));
 
-        for (int i = 0; i < numberOfMines; i++) {
-            int mineX, mineY;
-            do {
-                mineX = random.nextInt(size);
-                mineY = random.nextInt(size);
-            } while (
-                (mineX == turtleX && mineY == turtleY) ||  // Мина не может быть на старте черепахи
-                (mineX == flagX && mineY == flagY) ||      // Мина не может быть на флаге
-                field[mineY][mineX] == '#'                 // Уже размещённая мина
-            );
+        boolean validField = false;
+        while (!validField) {
+            for (int i = 0; i < size; i++) {
+                Arrays.fill(field[i], '.');
+            }
 
-            field[mineY][mineX] = '#'; // Устанавливаем мину
-        }
-        
-        // Проверка, можно ли добраться до флага
-        if (isBlockedByMines()) {
-            System.out.println("====================================");
-            System.out.println("Мины заблокировали доступ к флагу. Игра перезапущена!");
-            System.out.println("====================================");
-            resetGame(); // Перезапуск игры
+            for (int i = 0; i < numberOfMines; i++) {
+                int mineX, mineY;
+                do {
+                    mineX = random.nextInt(size);
+                    mineY = random.nextInt(size);
+                } while (
+                    (mineX == turtleX && mineY == turtleY) ||
+                    (mineX == flagX && mineY == flagY) ||
+                    field[mineY][mineX] == '#'
+                );
+
+                field[mineY][mineX] = '#';
+            }
+
+            validField = canReachFlag();
         }
     }
 
-    // Проверка, не заблокирован ли флаг минами
-    private static boolean isBlockedByMines() {
-        // Простая проверка: если все соседние клетки черепахи заняты минами
+    private static boolean canReachFlag() {
+        boolean[][] visited = new boolean[size][size];
+        Queue<int[]> queue = new LinkedList<>();
+        queue.add(new int[] {turtleX, turtleY});
+        visited[turtleY][turtleX] = true;
+
         int[][] directions = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
 
-        for (int[] dir : directions) {
-            int newX = turtleX + dir[0];
-            int newY = turtleY + dir[1];
+        while (!queue.isEmpty()) {
+            int[] pos = queue.poll();
+            int x = pos[0], y = pos[1];
 
-            if (!isOutOfBounds(newX, newY) && field[newY][newX] != '#') {
-                return false; // Есть хотя бы один путь
+            if (x == flagX && y == flagY) {
+                return true;
+            }
+
+            for (int[] dir : directions) {
+                int newX = x + dir[0];
+                int newY = y + dir[1];
+
+                if (isOutOfBounds(newX, newY) || visited[newY][newX] || field[newY][newX] == '#') {
+                    continue;
+                }
+
+                queue.add(new int[] {newX, newY});
+                visited[newY][newX] = true;
             }
         }
-        return true; // Все пути заблокированы
+
+        return false;
     }
 
-    // Перезапуск игры в случае, если невозможно выиграть
-    private static void resetGame() {
-        field = new char[size][size];
-        turtleX = 0;
-        turtleY = 0;
-        placeFlag();
-        placeMines((int) (size * size * 0.05)); // Устанавливаем мины заново
-        field[turtleY][turtleX] = '*'; // Начальная позиция черепахи закрашена
+    private static boolean isOutOfBounds(int x, int y) {
+        return x < 0 || x >= size || y < 0 || y >= size;
     }
 
-    // Обработка команды игрока
     private static void processCommand(String command) {
         String[] parts = command.split(" ");
         String cmd = parts[0].toLowerCase();
@@ -187,35 +189,21 @@ public class TurtleGame {
         }
     }
 
-    // Передвижение черепахи
     private static void move(int dx, int dy) {
         for (int step = 0; step < Math.abs(dy) + Math.abs(dx); step++) {
             int newX = turtleX + (dx != 0 ? Integer.signum(dx) : 0);
             int newY = turtleY + (dy != 0 ? Integer.signum(dy) : 0);
 
             if (isOutOfBounds(newX, newY)) {
-                System.out.println("====================================");
-                System.out.println("Черепашка вышла за границы поля и погибла!");
-                System.out.println("====================================");
+                System.out.println("Черепашка вышла за границы поля и умерла!");
                 System.exit(0);
             }
 
             turtleX = newX;
             turtleY = newY;
 
-            // Проверяем, коснулась ли черепашка мины
             if (field[turtleY][turtleX] == '#') {
-                System.out.println("====================================");
-                System.out.println("Черепашка коснулась мины и погибла!");
-                System.out.println("====================================");
-                System.exit(0);
-            }
-
-            // Проверяем, коснулась ли черепашка флага
-            if (turtleX == flagX && turtleY == flagY) {
-                System.out.println("====================================");
-                System.out.println("Черепашка коснулась флага! Победа!");
-                System.out.println("====================================");
+                System.out.println("Черепашка наткнулась на мину и погибла!");
                 System.exit(0);
             }
 
@@ -223,29 +211,27 @@ public class TurtleGame {
                 field[turtleY][turtleX] = '*';
             }
         }
+
+        if (turtleX == flagX && turtleY == flagY) {
+            System.out.println("Черепашка коснулась флага! Победа!");
+            System.exit(0);
+        }
     }
 
-    private static boolean isOutOfBounds(int x, int y) {
-        return x < 0 || x >= size || y < 0 || y >= size;
-    }
-
-    // Вывод игрового поля
     private static void printField() {
-        System.out.println("====================================");
         for (int y = size - 1; y >= 0; y--) {
             for (int x = 0; x < size; x++) {
                 if (x == flagX && y == flagY) {
-                    System.out.print("$ "); // Флаг
+                    System.out.print("$ ");
                 } else if (x == turtleX && y == turtleY && penDown) {
-                    System.out.print("Ж "); // Черепашка, если перо опущено
+                    System.out.print("Ж ");
                 } else if (field[y][x] == '#') {
-                    System.out.print("# "); // Мина
+                    System.out.print("# ");
                 } else {
-                    System.out.print((field[y][x] == '*' ? '*' : '.') + " "); // След или пустое поле
+                    System.out.print((field[y][x] == '*' ? '*' : '.') + " ");
                 }
             }
             System.out.println();
         }
-        System.out.println("====================================");
     }
 }

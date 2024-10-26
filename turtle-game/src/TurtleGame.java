@@ -10,32 +10,57 @@ public class TurtleGame {
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
+        Random random = new Random();
 
         System.out.println("====================================");
-        System.out.print("Введите размер карты (минимум 5, максимум 90): ");
-        size = scanner.nextInt();
-        System.out.println("====================================");
 
-        if (size < 5) {
-            System.out.println("Размер карты должен быть не меньше 5. Установлен размер 5.");
-            size = 5;
-        } else if (size > 90) {
-            System.out.println("Размер карты должен быть не больше 90. Установлен размер 90.");
-            size = 90;
+        while (true) {
+            System.out.print("Введите размер карты (минимум 3, максимум 90, или 'random'): ");
+            String input = scanner.next().toLowerCase();
+            
+            if (input.equals("random")) {
+                size = random.nextInt(88) + 3;
+                System.out.println("Случайный размер карты: " + size);
+                break;
+            } 
+            try {
+                size = Integer.parseInt(input);
+                if (size < 3 || size > 90) {
+                    System.out.println("Ошибка: Размер карты должен быть от 3 до 90.");
+                } else {
+                    break;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Ошибка: Введите целое число или 'random'.");
+            }
         }
 
         field = new char[size][size];
-
-        System.out.println("====================================");
-        System.out.print("Введите процент покрытия минами (0-80%): ");
-        int minePercentage = scanner.nextInt();
         System.out.println("====================================");
 
-        if (minePercentage < 0) {
-            minePercentage = 0;
-        } else if (minePercentage > 80) {
-            minePercentage = 80;
+        int minePercentage = 0;
+        while (true) {
+            System.out.print("Введите процент покрытия минами (0-50%, или 'random'): ");
+            String input = scanner.next().toLowerCase();
+            
+            if (input.equals("random")) {
+                minePercentage = random.nextInt(51);
+                System.out.println("Случайный процент покрытия минами: " + minePercentage + "%");
+                break;
+            }
+            try {
+                minePercentage = Integer.parseInt(input);
+                if (minePercentage < 0 || minePercentage > 50) {
+                    System.out.println("Ошибка: Процент покрытия должен быть от 0 до 50.");
+                } else {
+                    break;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Ошибка: Введите целое число или 'random'.");
+            }
         }
+
+        System.out.println("====================================");
 
         placeFlag();
         placeMines(minePercentage);
@@ -74,7 +99,7 @@ public class TurtleGame {
             }
         }
 
-        field[flagY][flagX] = 'F';
+        field[flagY][flagX] = '$';
     }
 
     private static void placeMines(int minePercentage) {

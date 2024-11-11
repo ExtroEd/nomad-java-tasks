@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Java: run SnowflakesAnimation",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "SnowflakesAnimation",
+            "classPaths": [
+                "lib/*",
+                "src"
+            ]
+        }
+    ]
+}

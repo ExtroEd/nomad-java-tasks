@@ -2,31 +2,34 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "compile",
+            "label": "Компиляция Java",
             "type": "shell",
             "command": "javac",
             "args": [
                 "-cp",
-                "lib/*:src",
+                "processing/core.jar",
+                "-d",
+                "out",
                 "src/SnowflakesAnimation.java"
             ],
             "group": {
                 "kind": "build",
                 "isDefault": true
-            },
-            "detail": "Compiling Java source files"
+            }
         },
         {
-            "label": "run",
+            "label": "Запуск Java",
             "type": "shell",
             "command": "java",
             "args": [
                 "-cp",
-                "lib/*:src",
+                "processing/core.jar;out",
                 "SnowflakesAnimation"
             ],
-            "group": "build",
-            "dependsOn": "compile"
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
         }
     ]
 }

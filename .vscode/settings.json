@@ -1,8 +1,0 @@
-{
-    "java.project.sourcePaths": [
-        "snowflake-animation\\src"
-    ],
-    "java.project.referencedLibraries": [
-        "snowflake-animation\\processing\\core.jar"
-    ]
-}

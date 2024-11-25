@@ -3,6 +3,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Random;
 
+//Нужно доделать код.
+
 public class SnowflakeGenerator extends JPanel {
     private static final int WIDTH = 1920; // Ширина экрана
     private static final int HEIGHT = 1080; // Высота экрана

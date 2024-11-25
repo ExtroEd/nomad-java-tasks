@@ -1,18 +1,27 @@
-## Getting Started
+❄️ Snowflakes Animation
+Snowflakes Animation — это интерактивная анимация, созданная с использованием библиотеки Processing. Проект демонстрирует падение снежинок с различными эффектами, такими как ветер, взаимодействие с курсором и визуальные 3D-иллюзии.
 
-Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
+📋 Особенности
+Рандомная генерация снежинок: каждая снежинка уникальна по размеру, форме, числу ветвей (6 или 8), и центральному узору (круг, треугольник, квадрат, гексагон, октогон или ничего).
+Иллюзия глубины: снежинки, которые падают медленнее, кажутся дальше благодаря изменению их яркости.
+Имитация ветра:
+Нажмите ← или →, чтобы снежинки падали под углом влево или вправо.
+Нажмите ↓, чтобы отключить ветер и вернуть снежинки к прямому падению.
+Интерактивность с курсором:
+Курсор представлен жёлтым кругом с мягкой градиентной заливкой.
+Снежинки не проходят через курсор, а "отталкиваются" от него, создавая эффект скольжения.
+🎮 Управление
+Клавиши направления:
+← — ветер влево.
+→ — ветер вправо.
+↓ — ветер отключён.
+Мышь:
+Перемещайте курсор, чтобы снежинки взаимодействовали с ним.
+🛠️ Установка и запуск
+Убедитесь, что у вас установлен Processing.
+Скачайте проект и поместите его в директорию с вашим проектом Processing.
+Запустите файл SnowflakesAnimation.java из любой IDE, поддерживающей Java, или через Processing с использованием библиотеки Processing core.
+🌟 Скриншот
+(Добавьте сюда скриншот приложения в действии.)
 
-## Folder Structure
-
-The workspace contains two folders by default, where:
-
-- `src`: the folder to maintain sources
-- `lib`: the folder to maintain dependencies
-
-Meanwhile, the compiled output files will be generated in the `bin` folder by default.
-
-> If you want to customize the folder structure, open `.vscode/settings.json` and update the related settings there.
-
-## Dependency Management
-
-The `JAVA PROJECTS` view allows you to manage your dependencies. More details can be found [here](https://github.com/microsoft/vscode-java-dependency#manage-dependencies).
+Наслаждайтесь магией зимы! ❄️

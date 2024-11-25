@@ -3,6 +3,9 @@ import java.util.ArrayList;
 
 public class SnowflakesAnimation extends PApplet {
     ArrayList<Snowflake> snowflakes = new ArrayList<>();
+    float windAngle = 0;
+    float targetWindAngle = 0;
+    float cursorRadius = 30;
 
     public static void main(String[] args) {
         PApplet.main("SnowflakesAnimation");
@@ -14,111 +17,198 @@ public class SnowflakesAnimation extends PApplet {
 
     public void setup() {
         background(255);
+        noCursor();
     }
 
     public void draw() {
         background(0);
-        fill(255);
-        noStroke();
 
-        if (snowflakes.size() < 200) {
-            snowflakes.add(new Snowflake(random(width), -10, random(1, 3)));
+        windAngle = lerp(windAngle, targetWindAngle, 0.05f);
+
+        if (snowflakes.size() < 300) {
+            snowflakes.add(new Snowflake(random(width), -10, random(0.5f, 2)));
         }
 
-        for (Snowflake snowflake : snowflakes) {
+        for (int i = snowflakes.size() - 1; i >= 0; i--) {
+            Snowflake snowflake = snowflakes.get(i);
             snowflake.update();
             snowflake.display();
+
+            if (snowflake.y - snowflake.size > height) {
+                snowflakes.remove(i);
+            }
         }
+
+        drawCursor();
+    }
+
+    public void keyPressed() {
+        if (keyCode == LEFT) {
+            targetWindAngle = -PI / 6;
+        } else if (keyCode == RIGHT) {
+            targetWindAngle = PI / 6;
+        } else if (keyCode == DOWN) {
+            targetWindAngle = 0;
+        }
+    }
+
+    void drawCursor() {
+        pushMatrix();
+        translate(mouseX, mouseY);
+
+        int layers = 30;
+        float maxAlpha = 150;
+        float minAlpha = 10;
+        float radiusStep = cursorRadius / layers;
+
+        for (int i = layers; i > 0; i--) {
+            float alpha = map(i, 1, layers, maxAlpha, minAlpha);
+            fill(255, 255, 0, alpha);
+            noStroke();
+            ellipse(0, 0, radiusStep * i * 2, radiusStep * i * 2);
+        }
+
+        popMatrix();
     }
 
     class Snowflake {
         float x, y;
         float speed;
         float size;
-        int numBranches = 6; // Количество веточек снежинки
-        float angleOffset;
-        ArrayList<Branch> branches = new ArrayList<>(); // Храним ветви
+        float rotation;
+        float rotationSpeed;
+        int numBranches;
+        String centerShape;
+        ArrayList<Branch> branches = new ArrayList<>();
+        int colorShade;
 
         Snowflake(float x, float y, float speed) {
             this.x = x;
             this.y = y;
             this.speed = speed;
-            this.size = random(5, 10); // Увеличим размер для лучшего эффекта
-            this.angleOffset = random(TWO_PI);
+            this.size = random(2, 6);
+            colorShade = (int) map(speed, 0.5f, 2, 100, 255);
 
-            // Генерация уникальных ветвей только один раз
+            if (random(1) < 0.8) {
+                numBranches = 6;
+            } else {
+                numBranches = 8;
+            }
+
+            float shapeChance = random(1);
+            if (shapeChance < 0.25) {
+                centerShape = "circle";
+            } else if (shapeChance < 0.5) {
+                centerShape = (numBranches == 6) ? "hexagon" : "octagon";
+            } else if (shapeChance < 0.75) {
+                centerShape = (numBranches == 6) ? "triangle" : "square";
+            } else {
+                centerShape = "none";
+            }
+
+            rotationSpeed = random(-0.02f, 0.02f);
+
             for (int i = 0; i < numBranches; i++) {
                 float angle = TWO_PI / numBranches * i;
-                branches.add(new Branch(angle)); // Создаём ветви при генерации
+                branches.add(new Branch(angle));
             }
         }
 
         void update() {
-            y += speed;
-            if (y > height) {
-                y = -size;
-                x = random(width);
+            x += speed * sin(windAngle);
+            y += speed * cos(windAngle);
+
+            rotation += rotationSpeed;
+
+            float distanceToCursor = dist(x, y, mouseX, mouseY);
+            if (distanceToCursor < cursorRadius) {
+                float angleToCursor = atan2(mouseY - y, mouseX - x);
+                x -= cos(angleToCursor) * speed * 2;
+                y -= sin(angleToCursor) * speed * 2;
             }
+
+            if (x < -size) x = width + size;
+            if (x > width + size) x = -size;
         }
 
         void display() {
             pushMatrix();
             translate(x, y);
-            rotate(angleOffset); // Вращение для случайности
-            stroke(255);
+            rotate(rotation);
+            stroke(colorShade);
             noFill();
 
-            // Рисуем уже готовые ветви
+            switch (centerShape) {
+                case "circle":
+                    ellipse(0, 0, size * 2, size * 2);
+                    break;
+                case "hexagon":
+                case "octagon":
+                    drawPolygon(numBranches, size);
+                    break;
+                case "triangle":
+                    drawPolygon(3, size);
+                    break;
+                case "square":
+                    drawPolygon(4, size);
+                    break;
+            }
+
             for (Branch branch : branches) {
                 branch.display();
             }
             popMatrix();
         }
 
+        void drawPolygon(int sides, float radius) {
+            beginShape();
+            for (int i = 0; i < sides; i++) {
+                float angel = TWO_PI / sides * i;
+                float x = cos(angel) * radius;
+                float y = sin(angel) * radius;
+                vertex(x, y);
+            }
+            endShape(CLOSE);
+        }
+
         class Branch {
             float angle;
             float branchLength;
-            float branchThickness;
-            ArrayList<SubBranch> subBranches = new ArrayList<>(); // Храним подветви
+            ArrayList<SubBranch> subBranches = new ArrayList<>();
 
             Branch(float angle) {
                 this.angle = angle;
-                this.branchLength = size * random(1.2f, 1.5f);
-                this.branchThickness = random(1, 3);
+                this.branchLength = size * random(1.5f, 2f);
 
-                // Генерация подветвей для каждой ветви
-                for (int i = 0; i < 3; i++) {
-                    float subBranchAngle = angle + random(-PI/3, PI/3); // Угол подветви
-                    subBranches.add(new SubBranch(subBranchAngle)); // Создаём подветви при генерации
+                for (int i = -1; i <= 1; i += 2) {
+                    float subBranchAngle = angle + i * random(PI / 6, PI / 4);
+                    subBranches.add(new SubBranch(subBranchAngle));
                 }
             }
 
             void display() {
                 float x1 = cos(angle) * branchLength;
                 float y1 = sin(angle) * branchLength;
-
-                // Основная ветка
                 line(0, 0, x1, y1);
 
-                // Рисуем подветви
                 for (SubBranch subBranch : subBranches) {
-                    subBranch.display(x1, y1); // Передаём координаты для начала подветви
+                    subBranch.display(x1, y1);
                 }
             }
         }
 
         class SubBranch {
             float angle;
-            float branchLength;
+            float subBranchLength;
 
             SubBranch(float angle) {
                 this.angle = angle;
-                this.branchLength = size * random(0.3f, 0.7f);
+                this.subBranchLength = size * random(0.5f, 1f);
             }
 
             void display(float startX, float startY) {
-                float x2 = startX + cos(angle) * branchLength;
-                float y2 = startY + sin(angle) * branchLength;
+                float x2 = startX + cos(angle) * subBranchLength;
+                float y2 = startY + sin(angle) * subBranchLength;
                 line(startX, startY, x2, y2);
             }
         }

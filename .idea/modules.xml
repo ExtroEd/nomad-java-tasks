@@ -2,8 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/15-puzzle/15-puzzle.iml" filepath="$PROJECT_DIR$/15-puzzle/15-puzzle.iml" />
       <module fileurl="file://$PROJECT_DIR$/beecrowd/src/beecrowd.iml" filepath="$PROJECT_DIR$/beecrowd/src/beecrowd.iml" />
       <module fileurl="file://$PROJECT_DIR$/beecrowd/beecrowd2.iml" filepath="$PROJECT_DIR$/beecrowd/beecrowd2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/game-2048/game-2048.iml" filepath="$PROJECT_DIR$/game-2048/game-2048.iml" />
       <module fileurl="file://$PROJECT_DIR$/leetcode/leetcode.iml" filepath="$PROJECT_DIR$/leetcode/leetcode.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/nomad-java-tasks.iml" filepath="$PROJECT_DIR$/.idea/nomad-java-tasks.iml" />
       <module fileurl="file://$PROJECT_DIR$/rational-calculator/rational-calculator.iml" filepath="$PROJECT_DIR$/rational-calculator/rational-calculator.iml" />

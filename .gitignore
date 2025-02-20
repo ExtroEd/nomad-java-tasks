@@ -31,3 +31,6 @@ Thumbs.db
 
 # User-specific files
 *.swp
+
+# Игнорируем папку с скомпилированными файлами
+out/

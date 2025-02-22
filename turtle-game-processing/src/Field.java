@@ -4,6 +4,9 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Arrays;
 
+import static processing.core.PApplet.println;
+
+
 public class Field {
     private final int size;
     private final char[][] grid;
@@ -50,7 +53,7 @@ public class Field {
             // Очищаем поле, оставляя флаг неизменным
             for (int i = 0; i < size; i++) {
                 for (int j = 0; j < size; j++) {
-                    if(i == flagY && j == flagX) continue;
+                    if (i == flagY && j == flagX) continue;
                     grid[i][j] = '.';
                 }
             }
@@ -62,10 +65,11 @@ public class Field {
                     mineY = random.nextInt(size);
                 } while (
                         (mineX == 0 && mineY == 0) ||
-                                (mineX == flagX && mineY == flagY) ||
-                                grid[mineY][mineX] == '#'
+                        (mineX == flagX && mineY == flagY) ||
+                        grid[mineY][mineX] == '#'
                 );
                 grid[mineY][mineX] = '#';
+                println("Мина размещена на: (" + mineX + ", " + mineY + ")"); // Отладочное сообщение
             }
             validField = canReachFlag();
         }

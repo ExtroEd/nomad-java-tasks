@@ -1,5 +1,8 @@
 import processing.core.PApplet;
 
+import static processing.core.PApplet.println;
+
+
 public class Turtle {
     private int x, y;
     private boolean penDown;
@@ -16,6 +19,7 @@ public class Turtle {
     }
 
     public void moveTo(int newX, int newY) {
+        println("Черепашка перемещается на: (" + newX + ", " + newY + ")"); // Отладочное сообщение
         x = newX;
         y = newY;
         if (penDown) {
@@ -25,7 +29,7 @@ public class Turtle {
 
     public void togglePen() {
         penDown = !penDown;
-        PApplet.println("Перо " + (penDown ? "опущено" : "поднято"));
+        println("Перо " + (penDown ? "опущено" : "поднято"));
     }
 
     public boolean isPenDown() {
@@ -51,17 +55,5 @@ public class Turtle {
             applet.noStroke(); // Убираем обводку
             applet.ellipse(drawX, drawY, cellSize * 0.6f, cellSize * 0.6f); // Рисуем черепашку
         }
-    }
-
-    // Очистка следа черепашки
-    public void clearTrace(PApplet applet) {
-        int cellSize = applet.width / field.getSize();
-        int drawX = x * cellSize;
-        int drawY = y * cellSize;
-
-        // Очищаем только внутреннюю часть клетки, не затрагивая сетку
-        applet.noStroke();
-        applet.fill(255); // Цвет фона (белый)
-        applet.rect(drawX + 1, drawY + 1, cellSize - 2, cellSize - 2); // Оставляем сетку нетронутой
     }
 }

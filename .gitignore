@@ -9,6 +9,7 @@
 *.iml
 *.iws
 *.ipr
+out/
 
 # Maven
 target/
@@ -31,6 +32,3 @@ Thumbs.db
 
 # User-specific files
 *.swp
-
-# Игнорируем папку с скомпилированными файлами
-out/

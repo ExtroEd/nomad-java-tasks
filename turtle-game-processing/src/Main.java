@@ -3,7 +3,6 @@ import java.util.Random;
 
 
 public class Main extends PApplet {
-
     public static void main(String[] ignoredArgs) {
         PApplet.main("Main");
     }
@@ -32,16 +31,18 @@ public class Main extends PApplet {
 
     public void draw() {
         background(230);
+
         if (gameState == 0) {
             ui.drawMenu();
         } else if (gameState == 1) {
             if (!uiRemoved) {
                 ui.remove();
-                field = new Field(gridSize, new Random());
+                field = new Field(gridSize, new Random(), this);
                 field.setup(minePercentage);
                 turtle = new Turtle(0, 0, true, field);
                 uiRemoved = true;
             }
+
             pushMatrix();
             translate(offsetX, offsetY);
             scale(scaleFactor);
@@ -49,23 +50,41 @@ public class Main extends PApplet {
             turtle.display(this);
             popMatrix();
         }
+
         ui.drawEndScreen();
     }
 
     public void startGame() {
-        gridSize = ui.getGridSize();
-        minePercentage = ui.getMinePercentage();
-        gameState = 1;
+        try {
+            gridSize = ui.getGridSize();
+            minePercentage = ui.getMinePercentage();
+
+            if (gridSize < 10 || gridSize > 500) {
+                ui.showTooltip("Grid size must be from 10 to 500.");
+                return;
+            }
+
+            if (minePercentage < 0 || minePercentage > 60) {
+                ui.showTooltip("Mine percentage must be from 0 to 60.");
+                return;
+            }
+
+            ui.hideTooltip();
+            gameState = 1;
+
+        } catch (NumberFormatException ex) {
+            ui.showTooltip("Invalid input! Please enter integers.");
+        }
     }
 
     public void keyPressed() {
         if (gameState == 1) {
             int dx = 0, dy = 0;
-            if (keyCode == UP) dy = -1;
-            else if (keyCode == DOWN) dy = 1;
-            else if (keyCode == LEFT) dx = -1;
-            else if (keyCode == RIGHT) dx = 1;
-            else if (keyCode == 'P') turtle.togglePen();
+            if (keyCode == UP || keyCode == 'W') dy = -1;
+            else if (keyCode == DOWN || keyCode == 'S') dy = 1;
+            else if (keyCode == LEFT || keyCode == 'A') dx = -1;
+            else if (keyCode == RIGHT || keyCode == 'D') dx = 1;
+            else if (keyCode == 'E') turtle.togglePen();
             if (dx != 0 || dy != 0) moveTurtle(dx, dy);
         }
     }
@@ -73,14 +92,11 @@ public class Main extends PApplet {
     public void mouseWheel(processing.event.MouseEvent event) {
         float zoomFactor = event.getCount() > 0 ? 0.9f : 1.1f;
 
-        // Применяем новый масштаб
         scaleFactor *= zoomFactor;
 
-        // Вычисляем смещение для центрирования зума
         float centerX = width / 2.0f;
         float centerY = height / 2.0f;
 
-        // Пересчитываем смещение для нового масштаба
         offsetX += (centerX - offsetX) * (1 - zoomFactor);
         offsetY += (centerY - offsetY) * (1 - zoomFactor);
     }
@@ -108,55 +124,41 @@ public class Main extends PApplet {
         int newX = turtle.getX() + dx;
         int newY = turtle.getY() + dy;
 
-        // Проверка на выход за границы поля
         if (field.isOutOfBounds(newX, newY)) {
-            println("Черепашка вышла за границы поля и умерла!");
             ui.showLossScreen();
             gameState = 0;
             return;
         }
 
-        // Проверка на мину (выполняется всегда, независимо от состояния пера)
         char cell = field.getCell(newX, newY);
-        println("Текущая клетка: (" + newX + ", " + newY + ") = " + cell);
         if (cell == '#') {
-            println("Черепашка наткнулась на мину и погибла!");
             ui.showLossScreen();
             gameState = 0;
             return;
         }
 
-        // Проверка на флаг
         if (newX == field.getFlagX() && newY == field.getFlagY()) {
-            println("Черепашка коснулась флага! Победа!");
             ui.showWinScreen();
             gameState = 0;
             return;
         }
 
-        // Перемещаем черепашку
         turtle.moveTo(newX, newY);
 
-        // Оставляем след, если перо опущено
         if (turtle.isPenDown()) {
             field.markCell(newX, newY, '*');
         }
     }
 
-    public void setGridSize(int gridSize) {
-        this.gridSize = gridSize;
-    }
-
-    public void setMinePercentage(int minePercentage) {
-        this.minePercentage = minePercentage;
-    }
-
     public void resetToMenu() {
-        gameState = 0; // Возвращаемся в меню
-        uiRemoved = false; // Сбрасываем флаг удаления UI
-        field = null; // Очищаем поле
-        turtle = null; // Очищаем черепашку
-        ui.showMenuElements(); // Восстанавливаем элементы меню
-        ui.drawMenu(); // Перерисовываем меню
+        gameState = 0;
+        uiRemoved = false;
+        field = null;
+        turtle = null;
+
+        ui.resetEndScreen();
+
+        ui.showMenuElements();
+        ui.drawMenu();
     }
 }

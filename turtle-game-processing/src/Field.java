@@ -1,10 +1,6 @@
+import java.awt.Point;
+import java.util.*;
 import processing.core.PApplet;
-import java.util.Random;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Arrays;
-
-import static processing.core.PApplet.println;
 
 
 public class Field {
@@ -12,23 +8,104 @@ public class Field {
     private final char[][] grid;
     private int flagX, flagY;
     private final Random random;
+    private final PApplet parent;
 
-    public Field(int size, Random random) {
+    public Field(int size, Random random, PApplet parent) {
         this.size = size;
         this.random = random;
+        this.parent = parent;
         grid = new char[size][size];
     }
 
-    // Инициализация поля: заполнение пустыми клетками, размещение флага и мин
     public void setup(int minePercentage) {
         for (int i = 0; i < size; i++) {
             Arrays.fill(grid[i], '.');
         }
         placeFlag();
-        placeMines(minePercentage);
+
+        double reservedPercent = size < 20 ? 2.0 : 1.0;
+        double maxPathPercent = 100.0 - minePercentage - reservedPercent;
+        int maxPathLength = (int) Math.floor(size * size * (maxPathPercent / 100.0));
+
+        List<Point> path;
+        int attempts = 0;
+        int maxAttempts = 1000;
+
+        do {
+            path = generateRandomPath(0, 0, flagX, flagY);
+            attempts++;
+        } while (path.size() > maxPathLength && attempts < maxAttempts);
+
+        if (attempts == maxAttempts) {
+            System.out.println("⚠️ Warning: failed to generate valid path within constraints.");
+        }
+
+        Set<Point> pathSet = new HashSet<>(path);
+        for (Point p : pathSet) {
+            grid[p.y][p.x] = '.';
+        }
+
+        placeMinesExcludingPath(minePercentage, pathSet);
     }
 
-    // Размещает флаг на правом или нижнем краю поля, избегая стартовой точки (0,0)
+    private void placeMinesExcludingPath(int minePercentage, Set<Point> pathSet) {
+        int numberOfMines = (int) (size * size * (minePercentage / 100.0));
+        int placedMines = 0;
+
+        while (placedMines < numberOfMines) {
+            int x = random.nextInt(size);
+            int y = random.nextInt(size);
+            Point candidate = new Point(x, y);
+
+            if ((x == 0 && y == 0) || (x == flagX && y == flagY) || pathSet.contains(candidate)) continue;
+            if (grid[y][x] == '#') continue;
+
+            grid[y][x] = '#';
+            placedMines++;
+        }
+    }
+
+    private List<Point> generateRandomPath(int startX, int startY, int endX, int endY) {
+        boolean[][] visited = new boolean[size][size];
+        List<Point> path = new ArrayList<>();
+        Stack<Point> stack = new Stack<>();
+
+        stack.push(new Point(startX, startY));
+        visited[startY][startX] = true;
+
+        int[][] directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+
+        while (!stack.isEmpty()) {
+            Point current = stack.peek();
+            if (current.x == endX && current.y == endY) {
+                path.addAll(stack);
+                break;
+            }
+
+            List<int[]> shuffledDirs = new ArrayList<>(Arrays.asList(directions));
+            Collections.shuffle(shuffledDirs, random);
+
+            boolean moved = false;
+            for (int[] dir : shuffledDirs) {
+                int nx = current.x + dir[0];
+                int ny = current.y + dir[1];
+
+                if (isOutOfBounds(nx, ny) || visited[ny][nx]) continue;
+
+                visited[ny][nx] = true;
+                stack.push(new Point(nx, ny));
+                moved = true;
+                break;
+            }
+
+            if (!moved) {
+                stack.pop(); // backtrack
+            }
+        }
+
+        return path;
+    }
+
     private void placeFlag() {
         boolean onBottomBorder = random.nextBoolean();
         if (onBottomBorder) {
@@ -38,66 +115,10 @@ public class Field {
             flagX = size - 1;
             flagY = random.nextInt(size);
         }
-        if(flagX == 0 && flagY == 0) {
+        if (flagX == 0 && flagY == 0) {
             flagX = 1;
         }
         grid[flagY][flagX] = '$';
-    }
-
-    // Размещает мины с проверкой достижимости флага от старта
-    private void placeMines(int minePercentage) {
-        int numberOfMines = (int) (size * size * (minePercentage / 100.0));
-        boolean validField = false;
-
-        while (!validField) {
-            // Очищаем поле, оставляя флаг неизменным
-            for (int i = 0; i < size; i++) {
-                for (int j = 0; j < size; j++) {
-                    if (i == flagY && j == flagX) continue;
-                    grid[i][j] = '.';
-                }
-            }
-            // Размещаем мины случайным образом
-            for (int i = 0; i < numberOfMines; i++) {
-                int mineX, mineY;
-                do {
-                    mineX = random.nextInt(size);
-                    mineY = random.nextInt(size);
-                } while (
-                        (mineX == 0 && mineY == 0) ||
-                        (mineX == flagX && mineY == flagY) ||
-                        grid[mineY][mineX] == '#'
-                );
-                grid[mineY][mineX] = '#';
-                println("Мина размещена на: (" + mineX + ", " + mineY + ")"); // Отладочное сообщение
-            }
-            validField = canReachFlag();
-        }
-    }
-
-    // Проверяет, существует ли путь от (0,0) до флага
-    private boolean canReachFlag() {
-        boolean[][] visited = new boolean[size][size];
-        Queue<int[]> queue = new LinkedList<>();
-        queue.add(new int[]{0, 0});
-        visited[0][0] = true;
-        int[][] directions = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
-
-        while (!queue.isEmpty()){
-            int[] pos = queue.poll();
-            int x = pos[0], y = pos[1];
-            if(x == flagX && y == flagY) return true;
-            for(int[] dir : directions){
-                int newX = x + dir[0];
-                int newY = y + dir[1];
-                if(isOutOfBounds(newX, newY) || visited[newY][newX] || grid[newY][newX] == '#'){
-                    continue;
-                }
-                queue.add(new int[]{newX, newY});
-                visited[newY][newX] = true;
-            }
-        }
-        return false;
     }
 
     public boolean isOutOfBounds(int x, int y) {
@@ -126,27 +147,32 @@ public class Field {
         return size;
     }
 
-    // Отрисовка поля: клетки, мины, флаг и след черепашки
+    public float getCellSize() {
+        return (float) parent.width / size;
+    }
+
     public void display(PApplet applet) {
         int cellSize = applet.width / size;
+
+        float dynamicStroke = PApplet.constrain(cellSize * 0.025f, 0.05f, 1.2f);
+        applet.strokeWeight(dynamicStroke);
+
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 int x = j * cellSize;
                 int y = i * cellSize;
 
-                // Отрисовка клетки
                 if (i == flagY && j == flagX) {
-                    applet.fill(0, 255, 0); // флаг – зелёный
+                    applet.fill(0, 0, 255);
                 } else if (grid[i][j] == '#') {
-                    applet.fill(255, 0, 0); // мина – красная
+                    applet.fill(255, 0, 0);
                 } else if (grid[i][j] == '*') {
-                    applet.fill(200); // след – светло-серый
+                    applet.fill(200);
                 } else {
-                    applet.fill(255); // пустая клетка – белая
+                    applet.fill(255);
                 }
 
-                // Отрисовка клетки с сеткой
-                applet.stroke(0); // Чёрная сетка
+                applet.stroke(0);
                 applet.rect(x, y, cellSize, cellSize);
             }
         }

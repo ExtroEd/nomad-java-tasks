@@ -1,7 +1,5 @@
 import processing.core.PApplet;
 
-import static processing.core.PApplet.println;
-
 
 public class Turtle {
     private int x, y;

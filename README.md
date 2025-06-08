@@ -85,3 +85,6 @@ Some projects (like turtle-game-processing) require Processing.
 
 This project is licensed under the **GNU Lesser General Public License (LGPL)**.  
 See the [LICENSE](./LICENSE) file for details.
+
+© 2025 — Created by [ExtroEd](https://github.com/ExtroEd)  
+With technical assistance from ChatGPT by OpenAI

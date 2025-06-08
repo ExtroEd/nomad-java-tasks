@@ -1,5 +1,5 @@
 import processing.core.PApplet;
-import java.util.Random;
+import controlP5.ControlP5;
 
 
 public class Main extends PApplet {
@@ -7,73 +7,112 @@ public class Main extends PApplet {
         PApplet.main("Main");
     }
 
-    int gameState = 0;
-    private boolean uiRemoved = false;
+    String[] splashTexts = {
+            "Powered by TurtleForce!",
+            "Now with enemy foxes!",
+            "You shall not pass!",
+            "Made in Processing!",
+            "Mind the mines!",
+            "Run or die!",
+            "Victory = life.",
+            "Are there still mines in Normandy?",
+            "Entropy is inevitable.",
+            "Pathfinding... completed!",
+            "Quantum turtle is both dead and alive.",
+            "Simulation speed: 1 turtleFLOP.",
+            "AI is watching your moves.",
+            "Fractal mines... almost.",
+            "Random isn't truly random.",
+            "The fox is always faster.",
+            "Only 1% make it out alive.",
+            "Error 404: Safety not found.",
+            "Warning: May contain foxes.",
+            "Certified turtle drama.",
+            "This text changes randomly.",
+            "Press Alt+F4 to win!",
+            "Hidden ending unlocked.",
+            "Yes, Normandy still has mines.",
+            "Better than Minesweeper (probably).",
+            "Fox AI > Doom AI?",
+            "RTX ON: Not really.",
+            "Based on a true simulation.",
+            "Not sponsored by NVIDIA.",
+    };
 
-    private int gridSize, minePercentage;
-    private Field field;
-    private Turtle turtle;
-    private UI ui;
+    String selectedSplash;
 
-    private float scaleFactor = 1;
-    private float offsetX = 0, offsetY = 0;
-    private float lastMouseX, lastMouseY;
-    private boolean dragging = false;
+    private int gameState = 0;
+    private MenuInputsUI menuInputsUI;
+    private MenuRenderer menuRenderer;
+    private EndingsUI endingsUI;
+    private GameManager game;
+    private ControlP5 cp5;
 
     public void settings() {
         fullScreen();
     }
 
     public void setup() {
-        ui = new UI(this, this);
-        ui.setup();
+        cp5 = new ControlP5(this);
+
+        selectedSplash = splashTexts[(int) random(splashTexts.length)];
+
+        menuInputsUI = new MenuInputsUI(this, this, cp5);
+        menuInputsUI.setup();
+
+        menuRenderer = new MenuRenderer(this, cp5, this);
+
+        endingsUI = new EndingsUI(this, this, cp5);
+        game = new GameManager(this, endingsUI);
+
+        cp5.getController("startGame")
+                .onClick(_ -> startGame());
     }
 
     public void draw() {
         background(230);
 
         if (gameState == 0) {
-            ui.drawMenu();
+            menuRenderer.drawMenu();
         } else if (gameState == 1) {
-            if (!uiRemoved) {
-                ui.remove();
-                field = new Field(gridSize, new Random(), this);
-                field.setup(minePercentage);
-                turtle = new Turtle(0, 0, true, field);
-                uiRemoved = true;
+            if (!game.isReady()) {
+                game.start(
+                        menuInputsUI.getGridSize(),
+                        menuInputsUI.getMinePercentage(),
+                        menuInputsUI.isEnemyEnabled(),
+                        menuInputsUI.getFoxSpeed()
+                );
             }
-
-            pushMatrix();
-            translate(offsetX, offsetY);
-            scale(scaleFactor);
-            field.display(this);
-            turtle.display(this);
-            popMatrix();
+            game.updateAndDraw();
         }
 
-        ui.drawEndScreen();
+        endingsUI.drawEndScreen();
     }
 
     public void startGame() {
         try {
-            gridSize = ui.getGridSize();
-            minePercentage = ui.getMinePercentage();
+            int gridSize = menuInputsUI.getGridSize();
+            int minePercentage = menuInputsUI.getMinePercentage();
 
             if (gridSize < 10 || gridSize > 500) {
-                ui.showTooltip("Grid size must be from 10 to 500.");
+                menuRenderer.showTooltip("Grid size must be from 10 to 500.");
                 return;
             }
 
             if (minePercentage < 0 || minePercentage > 60) {
-                ui.showTooltip("Mine percentage must be from 0 to 60.");
+                menuRenderer.showTooltip("Mine percentage must be from 0 to 60.");
                 return;
             }
 
-            ui.hideTooltip();
-            gameState = 1;
+            int foxSpeed = menuInputsUI.getFoxSpeed();
+            boolean enemyEnabled = menuInputsUI.isEnemyEnabled();
 
+            game.start(gridSize, minePercentage, enemyEnabled, foxSpeed);
+            menuInputsUI.remove();
+            menuRenderer.hideTooltip();
+            gameState = 1;
         } catch (NumberFormatException ex) {
-            ui.showTooltip("Invalid input! Please enter integers.");
+            menuRenderer.showTooltip("Invalid input! Please enter integers.");
         }
     }
 
@@ -84,81 +123,31 @@ public class Main extends PApplet {
             else if (keyCode == DOWN || keyCode == 'S') dy = 1;
             else if (keyCode == LEFT || keyCode == 'A') dx = -1;
             else if (keyCode == RIGHT || keyCode == 'D') dx = 1;
-            else if (keyCode == 'E') turtle.togglePen();
-            if (dx != 0 || dy != 0) moveTurtle(dx, dy);
+            else if (keyCode == 'E') game.togglePen();
+            if (dx != 0 || dy != 0) game.moveTurtle(dx, dy);
         }
     }
 
     public void mouseWheel(processing.event.MouseEvent event) {
-        float zoomFactor = event.getCount() > 0 ? 0.9f : 1.1f;
-
-        scaleFactor *= zoomFactor;
-
-        float centerX = width / 2.0f;
-        float centerY = height / 2.0f;
-
-        offsetX += (centerX - offsetX) * (1 - zoomFactor);
-        offsetY += (centerY - offsetY) * (1 - zoomFactor);
+        game.handleZoom(event.getCount() > 0 ? 0.9f : 1.1f);
     }
 
     public void mousePressed() {
-        lastMouseX = mouseX;
-        lastMouseY = mouseY;
-        dragging = true;
+        game.startDragging(mouseX, mouseY);
     }
 
     public void mouseDragged() {
-        if (dragging) {
-            offsetX += mouseX - lastMouseX;
-            offsetY += mouseY - lastMouseY;
-            lastMouseX = mouseX;
-            lastMouseY = mouseY;
-        }
+        game.dragTo(mouseX, mouseY);
     }
 
     public void mouseReleased() {
-        dragging = false;
-    }
-
-    public void moveTurtle(int dx, int dy) {
-        int newX = turtle.getX() + dx;
-        int newY = turtle.getY() + dy;
-
-        if (field.isOutOfBounds(newX, newY)) {
-            ui.showLossScreen();
-            gameState = 0;
-            return;
-        }
-
-        char cell = field.getCell(newX, newY);
-        if (cell == '#') {
-            ui.showLossScreen();
-            gameState = 0;
-            return;
-        }
-
-        if (newX == field.getFlagX() && newY == field.getFlagY()) {
-            ui.showWinScreen();
-            gameState = 0;
-            return;
-        }
-
-        turtle.moveTo(newX, newY);
-
-        if (turtle.isPenDown()) {
-            field.markCell(newX, newY, '*');
-        }
+        game.stopDragging();
     }
 
     public void resetToMenu() {
         gameState = 0;
-        uiRemoved = false;
-        field = null;
-        turtle = null;
-
-        ui.resetEndScreen();
-
-        ui.showMenuElements();
-        ui.drawMenu();
+        game.reset();
+        endingsUI.resetEndScreen();
+        menuInputsUI.showMenuElements();
     }
 }
